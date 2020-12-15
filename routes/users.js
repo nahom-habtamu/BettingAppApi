@@ -55,7 +55,7 @@ router.delete('/:id', async(req,res) => {
     }
 });
 
-router.post('/', upload.single('profile'), async(req,res) => {
+router.post('/', async(req,res) => {
     
     try {
         const { error } = userValidationSchema.validate(req.body);
@@ -63,20 +63,14 @@ router.post('/', upload.single('profile'), async(req,res) => {
             throw new Error(error.details[0].message)
         }
         else {
-            if(req.file){
-                const user = new User({
-                    fullName : req.body.fullName,
-                    phoneNumber : req.body.phoneNumber,
-                    email : req.body.email,
-                    password : req.body.password,
-                    profile : req.file.path
-                });
-                const result = await user.save();
-                res.status(201).send(result);
-            }
-            else {
-                throw new Error('Profile Pic Not Found')
-            }
+            const user = new User({
+                fullName : req.body.fullName,
+                email : req.body.email,
+                password : req.body.password,
+                role : req.body.role
+            });
+            const result = await user.save();
+            res.status(201).send(result);
         }
     } 
     catch (error) {
@@ -84,6 +78,77 @@ router.post('/', upload.single('profile'), async(req,res) => {
     }
 
 });
+
+router.post('/addProfilePic/:id', upload.single('profile'), async(req,res) => {
+    try {
+        const id = req.params.id;
+        if(mongoose.Types.ObjectId.isValid(id)){
+            const user = await User.findById(id);
+            if(user){
+                if(req.file){
+                    const userWithPp = await User.findByIdAndUpdate(id, {
+                        fullName : req.body.fullName,
+                        phoneNumber : req.body.phoneNumber,
+                        email : req.body.email,
+                        password : req.body.password,
+                        profile : req.file.path
+                    }, { new : true});
+
+                    res.status(200).send(userWithPp);
+                }
+                else {
+                    throw new Error('Picture To Upload Is Not Found');
+                }
+            }
+            else {
+                throw new Error('User not found with given ID')
+            }
+        }
+        else {
+            throw new Error('Invalid User Identifier');
+        }
+    } 
+    catch (error) {
+        res.status(400).send(error.message)    
+    }
+});
+
+router.post('/addPhone/:id', upload.single('profile'), async(req,res) => {
+    try {
+        const id = req.params.id;
+        if(mongoose.Types.ObjectId.isValid(id)){
+            const user = await User.findById(id);
+            if(user){
+                if(!user.phoneNumber){
+                    const userWithPp = await User.findByIdAndUpdate(id, {
+                        fullName : user.fullName,
+                        phoneNumber : req.body.phoneNumber,
+                        email : user.email,
+                        password : user.password,
+                        profile : user.profile
+                    }, { new : true});
+
+                    res.status(200).send(userWithPp);
+                }
+                else {
+                    throw new Error('User Already Has A phone Number');
+                }
+            }
+            else {
+                throw new Error('User not found with given ID')
+            }
+        }
+        else {
+            throw new Error('Invalid User Identifier');
+        }
+    } 
+    catch (error) {
+        res.status(400).send(error.message)    
+    }
+});
+
+
+
 
 router.put('/:id', upload.single('profile'),async(req,res) => {
     

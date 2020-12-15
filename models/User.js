@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema({
         type : String,
         maxlength : 13,
         minlength : 10,
-        required : [true, "Enter Your Phone Number"],
         validate : {
             validator : (pn) => {
                 const pnRegexFull = /^[+][2][5][1][9][0-9]/;
@@ -57,7 +56,6 @@ const userSchema = new mongoose.Schema({
     profile : {
         type : String,
         maxlength : 255,
-        required : [true, " It's not bad to have profile picture, is it ?"]
     },
 
     role : {
@@ -71,8 +69,9 @@ const User = mongoose.model('Users', userSchema);
 const userValidationSchema = Joi.object({
     fullName : Joi.string().required().max(100),
     email : Joi.string().required().max(100),
-    phoneNumber : Joi.string().required().min(10).max(13),
-    password : Joi.string().required().min(8).max(255)
+    phoneNumber : Joi.string().min(10).max(13),
+    password : Joi.string().required().min(8).max(255),
+    role : Joi.string().min(4).max(5)
 });
 
 module.exports.User = User;

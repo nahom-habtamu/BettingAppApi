@@ -4,6 +4,7 @@ const { Bet, betValidationSchema } = require('../models/Bet');
 const { User } = require('../models/User');
 
 const checkDate = require('../utility/checkDate');
+const Joi = require('joi');
 
 
 const router = express.Router();
@@ -70,7 +71,7 @@ router.post('/', async(req,res) => {
             const data = req.body;
             const { category , deadlineDate , userId , deadlineTime , isResolved } = data;
             const user = await User.findById(userId).select("fullName _id");
-
+            category.user = user;
             if(!user) throw new Error('User not found with given Id');
             if(!checkDate(deadlineDate)) throw new Error('Invalid ' + deadlineDate.calenderType + " date ");
  
@@ -80,7 +81,8 @@ router.post('/', async(req,res) => {
                 users : [],
                 isResolved : isResolved,
                 deadlineDate : deadlineDate,
-                deadlineTime : deadlineTime
+                deadlineTime : deadlineTime,
+                witness : []
             });
 
             const result = await bet.save();
@@ -96,9 +98,6 @@ router.post('/', async(req,res) => {
 
 router.post('/addUser', async(req,res) => {
     try {
-        if(mongoose.Types.ObjectId.isValid(req.body.betId) && mongoose.Types.ObjectId.isValid(req.body.userId)){
-            throw new Error('Invalid Identifier for Bet or User');
-        }
         const original = await Bet.findById(req.body.betId);
         if(original.createdBy._id === req.body.userId){
             throw new Error('Creator cant be assigned as a user of a bet');
@@ -113,7 +112,8 @@ router.post('/addUser', async(req,res) => {
             isResolved : original.isResolved,
             deadlineDate : original.deadlineDate,
             deadlineTime : original.deadlineTime,
-            users : [... original.users, user]
+            users : [... original.users, user],
+            witness : original.witness
         }, { new : true});
 
         if(!result){
@@ -128,5 +128,74 @@ router.post('/addUser', async(req,res) => {
     }
 });
 
+
+router.post('/addCategory', async(req,res) => {
+    try {
+        const schema = Joi.object({
+            betId : Joi.string().required(),
+            category : Joi.object({
+                description : Joi.string().required(),
+                priceOrMoney : Joi.number().required(),
+                userId : Joi.string().required(),
+            }).required()
+        });
+
+        const { error } = schema.validate(req.body);
+        if(error){
+            throw error;
+        }
+        else {
+            const original = await Bet.findById(req.body.betId);
+            if(!original) throw new Error("Bet Not found with given ID");
+            const user = await User.findById(req.body.category.userId).select("_id fullName");
+            const category = { 
+                description : req.body.category.description,
+                priceOrMoney : req.body.category.priceOrMoney,
+                user : user,
+                isMain : false
+            }
+            const result = await Bet.findByIdAndUpdate(req.body.betId,{
+                createdBy : original.createdBy,
+                category : [...original.category, category],
+                isResolved : original.isResolved,
+                deadlineDate : original.deadlineDate,
+                deadlineTime : original.deadlineTime,
+                users : original.users,
+                witness : original.witness,
+            }, { new : true});
+            
+            res.status(200).send(result)
+        }
+    } 
+    catch (error) {
+        res.status(400).send(error.message);
+    }
+});
+
+
+router.post('/addWitness', async(req,res) => {
+    try {
+        const witness = {
+            addedBy : await User.findById(req.body.addedBy),
+            witnessUser : await User.findById(req.body.witnessUser),
+        };
+
+        const original = await Bet.findById(req.body.betId);
+        const result = await Bet.findByIdAndUpdate(req.body.betId,{
+            createdBy : original.createdBy,
+            category : original.category,
+            isResolved : original.isResolved,
+            deadlineDate : original.deadlineDate,
+            deadlineTime : original.deadlineTime,
+            users : original.users,
+            witness : [...original.witness, witness]
+        }, {new : true})
+
+        res.status(200).send(result)
+    } 
+    catch (error) {
+        res.status(400).send(error.message);
+    }
+});
 
 module.exports = router;

@@ -15,6 +15,12 @@ const betSchema = new mongoose.Schema({
 
     category : {
         type : [new mongoose.Schema({
+            user : {
+                type : new mongoose.Schema({
+                    fullName : String,
+                    userID : mongoose.Types.ObjectId
+                }),
+            },
             description : {
                 type : String,
                 required : [true, "A description is required for any bet category"]
@@ -32,19 +38,29 @@ const betSchema = new mongoose.Schema({
     },
 
     users : {
-        type : [ userSchema ],
+        type : [ new mongoose.Schema({
+                    fullName : String,
+                    userID : mongoose.Types.ObjectId
+                }) 
+        ],
         required : [true, "hmmmmmmmmm let's get away with this"],
         default : []
     },
     witness : {
         type : [ new mongoose.Schema({
                 addedBy : {
-                    type : userSchema,
+                    type : new mongoose.Schema({
+                        fullName : String,
+                        userID : mongoose.Types.ObjectId
+                    }),
                     required : [true, "if no adder no witness right"]
                 },
 
                 witnessUser : {
-                    type : userSchema,
+                    type : new mongoose.Schema({
+                        fullName : String,
+                        userID : mongoose.Types.ObjectId
+                    }),
                     required : [true, "the witness itself is required"]
                 } 
             })
@@ -109,6 +125,7 @@ const Bet = mongoose.model('Bets', betSchema);
 const betValidationSchema = Joi.object({
     userId : Joi.ObjectId().required(),
     category : Joi.object({
+        userId : Joi.string(),
         description : Joi.string().required(),
         priceOrMoney : Joi.number().required().min(1)
     }),
