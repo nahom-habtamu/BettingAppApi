@@ -1,10 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { Wallet , walletValidationSchema } = require('../models/Wallet');
-
+const auth = require('auth');
+const { agentAdminOrUser, agentOrUser } = require('../middlewares/role');
 const router = express.Router();
 
-router.get('/', async(req,res) => {
+router.get('/',[auth, agentAdminOrUser],async(req,res) => {
     try {
         const wallets = await Wallet.find({});
         res.status(200).send(wallets);
@@ -14,7 +15,7 @@ router.get('/', async(req,res) => {
     }
 });
 
-router.get('/:id', async(req,res) => {
+router.get('/:id',[auth,agentAdminOrUser],async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid){
@@ -35,7 +36,7 @@ router.get('/:id', async(req,res) => {
     }
 });
 
-router.delete('/:id', async(req,res) => {
+router.delete('/:id',[auth, agentOrUser ],async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid){
@@ -56,7 +57,7 @@ router.delete('/:id', async(req,res) => {
     }
 });
 
-router.post('/', async(req,res) => {
+router.post('/',[auth, agentOrUser],async(req,res) => {
     try {
         const { error } = walletValidationSchema.validate(req.body);
         if(error){
@@ -75,7 +76,7 @@ router.post('/', async(req,res) => {
     }
 });
 
-router.put('/:id', async(req,res) => {
+router.put('/:id',[auth,agentOrUser],async(req,res) => {
     try {
         const { error } = walletValidationSchema.validate(req.body);
         if(error){

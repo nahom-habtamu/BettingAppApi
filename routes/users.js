@@ -1,11 +1,16 @@
-const express = require('express');
-const { User , userValidationSchema } = require('../models/User');
-const mongoose = require('mongoose');
-const upload = require('../multer/multerProfilePictureConfig');
-const router = express.Router();
 const fs = require('fs');
+const bcrypt = require('bcrypt');
+const express = require('express');
+const mongoose = require('mongoose');
 
-router.get('/', async(req,res) => {
+const { User , userValidationSchema } = require('../models/User');
+const upload = require('../multer/multerProfilePictureConfig');
+const auth = require('../middlewares/auth');
+const { admin, adminOrUser,agentAdminOrUser, agentOrUser, agent , user} = require('../middlewares/role');
+
+const router = express.Router();
+
+router.get('/', [auth,agentAdminOrUser], async(req,res) => {
     try {
         const users = await User.find({});
         res.status(201).send(users);
@@ -15,7 +20,7 @@ router.get('/', async(req,res) => {
     }
 });
 
-router.get('/:id', async(req,res) => {
+router.get('/:id',[auth, agentAdminOrUser] ,async(req,res) => {
     
     try {
         const id = req.params.id;
@@ -35,7 +40,7 @@ router.get('/:id', async(req,res) => {
     }
 });
 
-router.delete('/:id', async(req,res) => {
+router.delete('/:id',[auth,agentAdminOrUser],async(req,res) => {
 
     try {
         const id = req.params.id;
@@ -63,14 +68,18 @@ router.post('/', async(req,res) => {
             throw new Error(error.details[0].message)
         }
         else {
+            const salt = await bcrypt.genSalt(10);  
+            const hashedPassword = await bcrypt.hash(req.body.password,salt);  
             const user = new User({
                 fullName : req.body.fullName,
                 email : req.body.email,
-                password : req.body.password,
+                password : hashedPassword,
                 role : req.body.role
             });
-            const result = await user.save();
-            res.status(201).send(result);
+            await user.save();
+            const hiddenPassword = await User.findById(user._id).select("_id role email fullName");          
+            const token = user.generateAuthToken();
+            res.header('x-auth-token',token).send(hiddenPassword);
         }
     } 
     catch (error) {
@@ -79,7 +88,7 @@ router.post('/', async(req,res) => {
 
 });
 
-router.post('/addProfilePic/:id', upload.single('profile'), async(req,res) => {
+router.post('/addProfilePic/:id',[auth,agentOrUser], upload.single('profile'), async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid(id)){
@@ -93,7 +102,6 @@ router.post('/addProfilePic/:id', upload.single('profile'), async(req,res) => {
                         password : req.body.password,
                         profile : req.file.path
                     }, { new : true});
-
                     res.status(200).send(userWithPp);
                 }
                 else {
@@ -113,7 +121,7 @@ router.post('/addProfilePic/:id', upload.single('profile'), async(req,res) => {
     }
 });
 
-router.post('/addPhone/:id', upload.single('profile'), async(req,res) => {
+router.post('/addPhone/:id',[auth, agentOrUser], upload.single('profile'), async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid(id)){
@@ -150,7 +158,7 @@ router.post('/addPhone/:id', upload.single('profile'), async(req,res) => {
 
 
 
-router.put('/:id', upload.single('profile'),async(req,res) => {
+router.put('/:id', [auth,agentOrUser], upload.single('profile'),async(req,res) => {
     
     try {
         const { error } = userValidationSchema.validate(req.body);

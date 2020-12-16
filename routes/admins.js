@@ -1,8 +1,11 @@
 const mongoose = require('mongoose');
 const express = require('express');
+const bcrypt = require('bcrypt');
 const { Admin, adminValidationSchema } = require('../models/Admin');
-const router = express.Router();
+const auth = require('../middlewares/auth');
+// const { } = require('../middlewares/role'); // There should be a superAdmin
 
+const router = express.Router();
 
 router.get('/', async(req,res) => {
     
@@ -67,16 +70,23 @@ router.post('/', async(req,res) => {
             throw error;
         }
         else {
+            const salt = await bcrypt.genSalt(10);  
+            const hashedPassword = await bcrypt.hash(req.body.password,salt);  
+
             const admin = new Admin({
                 fullName : req.body.fullName,
                 email : req.body.email,
                 phoneNumber : req.body.phoneNumber,
-                password : req.body.password,
+                password : hashedPassword,
+                role : "admin",
                 permissions : req.body.permissions
             });
 
-            const result = await admin.save();
-            res.status(200).send(result);
+            await admin.save();
+            const hiddenPassword = await Admin.findById(admin._id).select("_id role phoneNumber permissions email fullName");          
+            const token = admin.generateAuthToken();
+            req.setHeader('x-auth-token',token);
+            res.send(hiddenPassword);
         }
     } 
     catch (error) {
@@ -87,14 +97,18 @@ router.post('/', async(req,res) => {
 router.put('/:id', async(req,res) => {
     try {
         const id = req.params.id;
+
         if(mongoose.Types.ObjectId.isValid(id)){
+            const salt = await bcrypt.genSalt(10);  
+            const hashedPassword = await bcrypt.hash(req.body.password,salt);  
+
             const edited = await Admin.findByIdAndUpdate(id, {
                 fullName : req.body.fullName,
                 email : req.body.email,
                 phoneNumber : req.body.phoneNumber,
-                password : req.body.password,
-                permissions : req.body.permissions
-
+                password : hashedPassword,
+                permissions : req.body.permissions,
+                role : "admin"
             }, { new : true });
 
             if(edited){

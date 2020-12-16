@@ -5,11 +5,12 @@ const { User } = require('../models/User');
 
 const checkDate = require('../utility/checkDate');
 const Joi = require('joi');
-
+const { adminOrUser, agentAdminOrUser, agentOrUser } = require('../middlewares/role');
+const auth = require('../middlewares/auth');
 
 const router = express.Router();
 
-router.get('/', async(req,res) => {
+router.get('/',[auth,agentAdminOrUser], async(req,res) => {
     
     try {
         const bets = await Bet.find({});
@@ -20,7 +21,7 @@ router.get('/', async(req,res) => {
     }
 });
 
-router.get('/:id', async(req,res) => {
+router.get('/:id',[auth, agentAdminOrUser], async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid(id)){
@@ -42,7 +43,7 @@ router.get('/:id', async(req,res) => {
 });
 
 
-router.delete('/:id', async(req,res) => {
+router.delete('/:id',[auth,agentOrUser], async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid(id)){
@@ -61,7 +62,7 @@ router.delete('/:id', async(req,res) => {
     }
 });
 
-router.post('/', async(req,res) => {
+router.post('/',[auth, agentOrUser],async(req,res) => {
     try {
         const { error } = betValidationSchema.validate(req.body);
         if(error){
@@ -96,7 +97,7 @@ router.post('/', async(req,res) => {
 
 });
 
-router.post('/addUser', async(req,res) => {
+router.post('/addUser',[auth,agentOrUser],async(req,res) => {
     try {
         const original = await Bet.findById(req.body.betId);
         if(original.createdBy._id === req.body.userId){
@@ -129,7 +130,7 @@ router.post('/addUser', async(req,res) => {
 });
 
 
-router.post('/addCategory', async(req,res) => {
+router.post('/addCategory',[auth,agentOrUser],async(req,res) => {
     try {
         const schema = Joi.object({
             betId : Joi.string().required(),
@@ -173,7 +174,7 @@ router.post('/addCategory', async(req,res) => {
 });
 
 
-router.post('/addWitness', async(req,res) => {
+router.post('/addWitness',[auth,agentOrUser], async(req,res) => {
     try {
         const witness = {
             addedBy : await User.findById(req.body.addedBy),

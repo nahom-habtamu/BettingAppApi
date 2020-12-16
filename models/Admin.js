@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 
 const adminSchema = new mongoose.Schema({
 
@@ -11,6 +12,7 @@ const adminSchema = new mongoose.Schema({
     },
 
     phoneNumber : {
+        unique : true,
         type : String,
         maxlength : 13,
         minlength : 10,
@@ -34,6 +36,7 @@ const adminSchema = new mongoose.Schema({
     },
 
     email : {
+        unique : true,
         type : String,
         maxlength : 100,
         minlength : 10,
@@ -61,10 +64,16 @@ const adminSchema = new mongoose.Schema({
 
    role : {
        type : String,
-       default : "Admin"
+       default : "admin"
    }
 
 });
+
+adminSchema.methods.generateAuthToken = function(){
+    const token = jwt.sign({ _id : this._id ,role : this.role, permissions : this.permissions },"somejwtkey");
+    return token;
+}
+
 
 const Admin = mongoose.model('Admins', adminSchema);
 const adminValidationSchema = Joi.object({
@@ -72,7 +81,7 @@ const adminValidationSchema = Joi.object({
     email : Joi.string().required().max(100),
     phoneNumber : Joi.string().required().min(10).max(13),
     password : Joi.string().required().min(8).max(255),
-    permissions : Joi.array().required().min(0).max()
+    permissions : Joi.array().required().min(0)
 });
 
 module.exports.Admin = Admin;

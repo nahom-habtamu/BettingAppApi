@@ -1,5 +1,5 @@
 function admin(req,res,next){
-    if(req.user.role !== "admin"){
+    if(req.loggedClient.role !== "admin"){
         return res.status(403).send("Access Denied");
     }
 
@@ -9,7 +9,8 @@ function admin(req,res,next){
 }
 
 function user(req,res,next){
-    if(req.user.role !== "user"){
+    console.log(req.loggedClient.role);
+    if(req.loggedClient.role !== "user"){
         return res.status(403).send("Access Denied");
     }
 
@@ -17,26 +18,19 @@ function user(req,res,next){
         next();
     }
 }
-function producer(req,res,next){
-    if(req.user.role !== "producer"){
+
+function agent(req,res,next){
+    if(req.loggedClient.role !== "agent"){
         return res.status(403).send("Access Denied");
     }
 
     else {
         next();
-    }
-}
-function adminOrproducer(req,res,next){
-    if(req.user.role === "producer" || req.user.role === "admin"){
-        next();
-    } 
-    else {
-        return res.status(403).send("Access Denied");
     }
 }
 
 function adminOrUser(req,res,next){
-    if(req.user.role === "user" || req.user.role === "admin"){
+    if(req.loggedClient.role === "user" || req.loggedClient.role === "admin"){
         next();
     } 
     else {
@@ -44,8 +38,27 @@ function adminOrUser(req,res,next){
     }
 }
 
-module.exports.producer = producer;
+function agentOrUser(req,res,next){
+    console.log(req.loggedClient.role);
+    if(req.loggedClient.role === "user" || req.loggedClient.role === "agent"){
+        next();
+    } 
+    else {
+        return res.status(403).send("Access Denied");
+    }
+}
+function agentAdminOrUser(req,res,next){
+    if(req.loggedClient.role === "user" || req.loggedClient.role === "agent" || req.loggedClient.role === "admin"){
+        next();
+    } 
+    else {
+        return res.status(403).send("Access Denied");
+    }
+}
+
 module.exports.admin = admin;
 module.exports.user = user;
+module.exports.agent = user;
 module.exports.adminOrUser = adminOrUser;
-module.exports.adminOrproducer = adminOrproducer;
+module.exports.agentOrUser = agentOrUser;
+module.exports.agentAdminOrUser = agentAdminOrUser;
