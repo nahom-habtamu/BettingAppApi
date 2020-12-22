@@ -1,14 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { Wallet , walletValidationSchema } = require('../models/Wallet');
+const { Notification , notificationValidationSchema } = require('../models/Notification');
 const auth = require('./auth');
 const { agentAdminOrUser, agentOrUser } = require('../middlewares/role');
 const router = express.Router();
 
 router.get('/',[auth, agentAdminOrUser],async(req,res) => {
     try {
-        const wallets = await Wallet.find({});
-        res.status(200).send(wallets);
+        const notifications = await Notification.find({});
+        res.status(200).send(notifications);
     } 
     catch (error) {
         res.status(400).send(error.message)    
@@ -19,16 +19,16 @@ router.get('/:id',[auth,agentAdminOrUser],async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid){
-            const wallet = await Wallet.findById(id);
-            if(wallet){
-                res.status(200).send(wallet);
+            const notification = await Notification.findById(id);
+            if(notification){
+                res.status(200).send(notification);
             }
             else {
-                throw new Error('Wallet not found with given ID');
+                throw new Error('Notification not found with given ID');
             }
         }
         else {
-            throw new Error('Invalid Wallet Identifier');
+            throw new Error('Invalid Notification Identifier');
         }
     } 
     catch (error) {
@@ -40,16 +40,16 @@ router.delete('/:id',[auth, agentOrUser ],async(req,res) => {
     try {
         const id = req.params.id;
         if(mongoose.Types.ObjectId.isValid){
-            const deletedWallet = await Wallet.findByIdAndDelete(id);
-            if(deletedWallet){
-                res.status(200).send(deletedWallet);
+            const deletedNotification = await Notification.findByIdAndDelete(id);
+            if(deletedNotification){
+                res.status(200).send(deletedNotification);
             }
             else {
-                throw new Error('Wallet not found with given ID');
+                throw new Error('Notification not found with given ID');
             }
         }
         else {
-            throw new Error('Invalid Wallet Identifier');
+            throw new Error('Invalid Notification Identifier');
         }
     } 
     catch (error) {
@@ -59,15 +59,15 @@ router.delete('/:id',[auth, agentOrUser ],async(req,res) => {
 
 router.post('/',[auth, agentOrUser],async(req,res) => {
     try {
-        const { error } = walletValidationSchema.validate(req.body);
+        const { error } = notificationValidationSchema.validate(req.body);
         if(error){
             throw error;
         }
         else {
-            const wallet = new Wallet(
+            const notification = new Notification(
                 ...req.body
             );
-            const result = await wallet.save();
+            const result = await notification.save();
             res.status(200).send(result);
         }
     } 
@@ -78,7 +78,7 @@ router.post('/',[auth, agentOrUser],async(req,res) => {
 
 router.put('/:id',[auth,agentOrUser],async(req,res) => {
     try {
-        const { error } = walletValidationSchema.validate(req.body);
+        const { error } = notificationValidationSchema.validate(req.body);
         if(error){
             throw error;
         }
@@ -86,14 +86,14 @@ router.put('/:id',[auth,agentOrUser],async(req,res) => {
             const id = req.params.id;
             if(mongoose.Types.ObjectId.isValid(id)){
 
-                const editedWallet = await Wallet.findByIdAndUpdate(id,
+                const editedNotification = await Notification.findByIdAndUpdate(id,
                     ...req.body,
                     { new : true}
                 );
-                res.status(200).send(editedWallet);
+                res.status(200).send(editedNotification);
             }
             else {
-                throw new Error('Invalid Wallet Identifier');
+                throw new Error('Invalid Notification Identifier');
             }
         }
     } 

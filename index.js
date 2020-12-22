@@ -5,6 +5,8 @@ const users = require('./routes/users');
 const bets = require('./routes/bets');
 const admins = require('./routes/admins');
 const auth = require('./routes/auth');
+const wallets = require('./routes/wallets');
+const notifications = require('./routes/notifications');
 
 
 const app = express();
@@ -25,6 +27,8 @@ app.use('/api/users', users);
 app.use('/api/admins', admins);
 app.use('/api/bets', bets);
 app.use('/api/auth', auth);
+app.use('/api/wallets', wallets);
+app.use('/api/notifications', notifications);
 
 
 
